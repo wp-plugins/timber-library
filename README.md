@@ -7,6 +7,7 @@ By Jared Novack (<a href="http://twitter.com/jarednova">@JaredNova</a>) and <a h
 [![Build Status](https://travis-ci.org/jarednova/timber.png?branch=master)](https://travis-ci.org/jarednova/timber)
 [![Coverage Status](https://coveralls.io/repos/jarednova/timber/badge.svg?branch=master)](https://coveralls.io/r/jarednova/timber?branch=master)
 [![Dependency Status](https://www.versioneye.com/user/projects/54e3c717d1ec5734f4000099/badge.svg?style=flat)](https://www.versioneye.com/user/projects/54e3c717d1ec5734f4000099)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/jarednova/timber/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/jarednova/timber/?branch=master)
 
 ### Because WordPress is awesome, but the_loop isn't
 Timber helps you create fully-customized WordPress themes faster with more sustainable code. With Timber, you write your HTML using the [Twig Template Engine](http://twig.sensiolabs.org/) separate from your PHP files.
@@ -15,7 +16,7 @@ This cleans-up your theme code so, for example, your php file can focus on being
 
 This is what Timber's `.twig` files look like:
 
-```html+django
+```twig
 {% extends "base.twig" %}
 {% block content %}
 <h1 class="big-title">{{foo}}</h1>
