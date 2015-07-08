@@ -17,6 +17,10 @@ class CakePHPInstaller extends BaseInstaller
      */
     public function inflectPackageVars($vars)
     {
+        if ($this->matchesCakeVersion('>=', '3.0.0')) {
+            return $vars;
+        }
+
         $nameParts = explode('/', $vars['name']);
         foreach ($nameParts as &$value) {
             $value = strtolower(preg_replace('/(?<=\\w)([A-Z])/', '_\\1', $value));
@@ -31,15 +35,31 @@ class CakePHPInstaller extends BaseInstaller
     /**
      * Change the default plugin location when cakephp >= 3.0
      */
-    public function getLocations() {
+    public function getLocations()
+    {
+        if ($this->matchesCakeVersion('>=', '3.0.0')) {
+            $this->locations['plugin'] =  $this->composer->getConfig()->get('vendor-dir') . '/{$vendor}/{$name}/';
+        }
+        return $this->locations;
+    }
+
+    /**
+     * Check if CakePHP version matches against a version
+     *
+     * @param string $matcher
+     * @param string $version
+     * @return bool
+     */
+    protected function matchesCakeVersion($matcher, $version)
+    {
         $repositoryManager = $this->composer->getRepositoryManager();
         if ($repositoryManager) {
             $repos = $repositoryManager->getLocalRepository();
             if (!$repos) {
-                return $this->locations;
+                return false;
             }
             $cake3 = new MultiConstraint(array(
-                new VersionConstraint('>=', '3.0.0'),
+                new VersionConstraint($matcher, $version),
                 new VersionConstraint('!=', '9999999-dev'),
             ));
             $pool = new Pool('dev');
@@ -48,11 +68,11 @@ class CakePHPInstaller extends BaseInstaller
             foreach ($packages as $package) {
                 $installed = new VersionConstraint('=', $package->getVersion());
                 if ($cake3->matches($installed)) {
-                    $this->locations['plugin'] = 'plugins/{$name}/';
+                    return true;
                     break;
                 }
             }
         }
-        return $this->locations;
+        return false;
     }
 }
