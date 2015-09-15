@@ -12,8 +12,8 @@ class TimberTwig {
 	}
 
 	function __construct() {
-		add_action( 'twig_apply_filters', array( $this, 'add_timber_filters_deprecated' ) );
-		add_action( 'twig_apply_filters', array( $this, 'add_timber_filters' ) );
+		add_action( 'timber/twig/filters', array( $this, 'add_timber_filters_deprecated' ) );
+		add_action( 'timber/twig/filters', array( $this, 'add_timber_filters' ) );
 	}
 
 	/**
@@ -28,6 +28,9 @@ class TimberTwig {
 		$twig->addFilter( new Twig_SimpleFilter( 'wp_body_class', array( $this, 'body_class' ) ) );
 		$twig->addFilter( new Twig_SimpleFilter( 'twitterify', array( 'TimberHelper', 'twitterify' ) ) );
 		$twig->addFilter( new Twig_SimpleFilter( 'twitterfy', array( 'TimberHelper', 'twitterify' ) ) );
+		$twig->addFilter( new Twig_SimpleFilter( 'string', function($arr, $glue = ' '){
+			return twig_join_filter($arr, $glue);
+		} ) );
 		return $twig;
 	}
 
@@ -58,7 +61,6 @@ class TimberTwig {
 		/* other filters */
 		$twig->addFilter( new Twig_SimpleFilter( 'stripshortcodes', 'strip_shortcodes' ) );
 		$twig->addFilter( new Twig_SimpleFilter( 'array', array( $this, 'to_array' ) ) );
-		$twig->addFilter( new Twig_SimpleFilter( 'string', array( $this, 'to_string' ) ) );
 		$twig->addFilter( new Twig_SimpleFilter( 'excerpt', 'wp_trim_words' ) );
 		$twig->addFilter( new Twig_SimpleFilter( 'function', array( $this, 'exec_function' ) ) );
 		$twig->addFilter( new Twig_SimpleFilter( 'pretags', array( $this, 'twig_pretags' ) ) );
@@ -93,6 +95,8 @@ class TimberTwig {
 				} ) );
 		$twig->addFunction( new Twig_SimpleFunction( 'function', array( &$this, 'exec_function' ) ) );
 		$twig->addFunction( new Twig_SimpleFunction( 'fn', array( &$this, 'exec_function' ) ) );
+
+		$twig->addFunction( new Twig_SimpleFunction( 'shortcode', 'do_shortcode' ) );
 
 		/* TimberObjects */
 		$twig->addFunction( new Twig_SimpleFunction( 'TimberPost', function ( $pid, $PostClass = 'TimberPost' ) {
@@ -132,6 +136,44 @@ class TimberTwig {
 					return new $UserClass( $pid );
 				} ) );
 
+		/* TimberObjects Alias */
+		$twig->addFunction( new Twig_SimpleFunction( 'Post', function ( $pid, $PostClass = 'TimberPost' ) {
+					if ( is_array( $pid ) && !TimberHelper::is_array_assoc( $pid ) ) {
+						foreach ( $pid as &$p ) {
+							$p = new $PostClass( $p );
+						}
+						return $pid;
+					}
+					return new $PostClass( $pid );
+				} ) );
+		$twig->addFunction( new Twig_SimpleFunction( 'Image', function ( $pid, $ImageClass = 'TimberImage' ) {
+					if ( is_array( $pid ) && !TimberHelper::is_array_assoc( $pid ) ) {
+						foreach ( $pid as &$p ) {
+							$p = new $ImageClass( $p );
+						}
+						return $pid;
+					}
+					return new $ImageClass( $pid );
+				} ) );
+		$twig->addFunction( new Twig_SimpleFunction( 'Term', function ( $pid, $TermClass = 'TimberTerm' ) {
+					if ( is_array( $pid ) && !TimberHelper::is_array_assoc( $pid ) ) {
+						foreach ( $pid as &$p ) {
+							$p = new $TermClass( $p );
+						}
+						return $pid;
+					}
+					return new $TermClass( $pid );
+				} ) );
+		$twig->addFunction( new Twig_SimpleFunction( 'User', function ( $pid, $UserClass = 'TimberUser' ) {
+					if ( is_array( $pid ) && !TimberHelper::is_array_assoc( $pid ) ) {
+						foreach ( $pid as &$p ) {
+							$p = new $UserClass( $p );
+						}
+						return $pid;
+					}
+					return new $UserClass( $pid );
+				} ) );
+
 		/* bloginfo and translate */
 		$twig->addFunction( 'bloginfo', new Twig_SimpleFunction( 'bloginfo', function ( $show = '', $filter = 'raw' ) {
 					return get_bloginfo( $show, $filter );
@@ -139,9 +181,9 @@ class TimberTwig {
 		$twig->addFunction( '__', new Twig_SimpleFunction( '__', function ( $text, $domain = 'default' ) {
 					return __( $text, $domain );
 				} ) );
-
+		/* get_twig is deprecated, use timber/twig */
 		$twig = apply_filters( 'get_twig', $twig );
-
+		$twig = apply_filters( 'timber/twig', $twig );
 		return $twig;
 	}
 
@@ -157,26 +199,6 @@ class TimberTwig {
 		}
 		$arr = array( $arr );
 		return $arr;
-	}
-
-	/**
-	 *
-	 *
-	 * @param mixed   $arr
-	 * @param string  $glue
-	 * @return string
-	 */
-	function to_string( $arr, $glue = ' ' ) {
-		if ( is_string( $arr ) ) {
-			return $arr;
-		}
-		if ( is_array( $arr ) && count( $arr ) == 1 ) {
-			return $arr[0];
-		}
-		if ( is_array( $arr ) ) {
-			return implode( $glue, $arr );
-		}
-		return null;
 	}
 
 	/**
@@ -215,9 +237,8 @@ class TimberTwig {
 	}
 
 	/**
-	 *
-	 *
 	 * @param mixed   $body_classes
+	 * @deprecated 0.20.7
 	 * @return string
 	 */
 	function body_class( $body_classes ) {
