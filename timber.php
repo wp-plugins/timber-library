@@ -4,7 +4,7 @@ Plugin Name: Timber
 Plugin URI: http://timber.upstatement.com
 Description: The WordPress Timber Library allows you to write themes using the power Twig templates
 Author: Jared Novack + Upstatement
-Version: 0.21.10
+Version: 0.21.11
 Author URI: http://upstatement.com/
 */
 
@@ -310,7 +310,7 @@ class Timber {
 	 * @param string  $cache_mode
 	 * @return bool|string
 	 */
-	public static function render( $filenames, $data = array(), $expires = false, $cache_mode = TimberLoader::CACHE_USE_DEFAULT ) {
+	public static function fetch( $filenames, $data = array(), $expires = false, $cache_mode = TimberLoader::CACHE_USE_DEFAULT ) {
 		if ( $expires === true ) {
 			//if this is reading as true; the user probably is using the old $echo param
 			//so we should move all vars up by a spot
@@ -319,6 +319,18 @@ class Timber {
 		}
 		$output = self::compile( $filenames, $data, $expires, $cache_mode, true );
 		$output = apply_filters( 'timber_compile_result', $output );
+		return $output;
+	}
+
+	/**
+	 * @param array   $filenames
+	 * @param array   $data
+	 * @param bool    $expires
+	 * @param string  $cache_mode
+	 * @return bool|string
+	 */
+	public static function render( $filenames, $data = array(), $expires = false, $cache_mode = TimberLoader::CACHE_USE_DEFAULT ) {
+		$output = static::fetch( $filenames, $data, $expires, $cache_mode );
 		echo $output;
 		return $output;
 	}
@@ -464,6 +476,8 @@ class Timber {
 			$args = array_merge( $args, $prefs );
 		}
 		$data = array();
+		$data['current'] = $args['current'];
+		$data['total'] = $args['total'];
 		$data['pages'] = TimberHelper::paginate_links( $args );
 		$next = get_next_posts_page_link( $args['total'] );
 		if ( $next ) {
